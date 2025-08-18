@@ -12,17 +12,20 @@ class MasterItemsController extends Controller
         return view('master_items.index.index');
     }
 
-   public function search(Request $request)
+    // Search dengan filter harga min/max
+    public function search(Request $request)
     {
         $kode = $request->kode;
         $nama = $request->nama;
         $hargamin = $request->hargamin;
         $hargamax = $request->hargamax;
 
-        $data_search = MasterItem::query();
+        $query = MasterItem::with('categories'); // include kategori jika nanti diperlukan
 
-        if (!empty($kode)) $data_search->where('kode', $kode);
-        if (!empty($nama)) $data_search->where('nama', 'LIKE', '%' . $nama . '%');
+        if (!empty($kode)) $query->where('kode', $kode);
+        if (!empty($nama)) $query->where('nama', 'LIKE', '%' . $nama . '%');
+
+        // Fix bug filter harga
         if (!empty($hargamin) && !empty($hargamax)) {
             $query->whereBetween('harga_beli', [$hargamin, $hargamax]);
         } elseif (!empty($hargamin)) {
@@ -31,11 +34,13 @@ class MasterItemsController extends Controller
             $query->where('harga_beli', '<=', $hargamax);
         }
 
+        $data_search = $query->get();
 
-        // Include field foto
-        $data_search = $data_search->select('kode', 'nama', 'jenis', 'harga_beli', 'laba', 'supplier', 'foto')
-                                   ->orderBy('id')
-                                   ->get();
+        // Format kategori menjadi string
+        $data_search->transform(function($item){
+            $item->kategori = $item->categories->pluck('nama')->implode(', ');
+            return $item;
+        });
 
         return response()->json([
             'status' => 200,
@@ -85,6 +90,11 @@ class MasterItemsController extends Controller
         }
 
         $data_item->save();
+
+        // Jika ada kategori, sync
+        if ($request->has('kategori')) {
+            $data_item->categories()->sync($request->kategori);
+        }
 
         return redirect('master-items');
     }

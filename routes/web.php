@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CategoryController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -31,3 +32,12 @@ Route::get('/master-items/delete/{id}', [App\Http\Controllers\MasterItemsControl
 
 
 Route::get('/master-items/update-random-data', [App\Http\Controllers\MasterItemsController::class, 'updateRandomData']);
+Route::prefix('categories')->group(function () {
+    Route::get('/', [CategoryController::class, 'index']);
+    Route::get('/create', [CategoryController::class, 'create']);
+    Route::post('/store', [CategoryController::class, 'store']);
+    Route::get('/{id}', [CategoryController::class, 'show']);
+    Route::get('/{id}/edit', [CategoryController::class, 'edit']);
+    Route::post('/{id}/update', [CategoryController::class, 'update']);
+    Route::get('/{id}/delete', [CategoryController::class, 'destroy']);
+});
